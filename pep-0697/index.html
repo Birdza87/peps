@@ -1,0 +1,452 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
+    <title>PEP 697 – C API for Extending Opaque Types | peps.python.org</title>
+    <link rel="shortcut icon" href="../_static/py.png">
+    <link rel="canonical" href="https://peps.python.org/pep-0697/">
+    <link rel="stylesheet" href="../_static/style.css" type="text/css">
+    <link rel="stylesheet" href="../_static/mq.css" type="text/css">
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" media="(prefers-color-scheme: light)" id="pyg-light">
+    <link rel="stylesheet" href="../_static/pygments_dark.css" type="text/css" media="(prefers-color-scheme: dark)" id="pyg-dark">
+    <link rel="alternate" type="application/rss+xml" title="Latest PEPs" href="https://www.python.org/dev/peps/peps.rss">
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <meta name="description" content="Python Enhancement Proposals (PEPs)">
+</head>
+<body>
+    
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-sun-half" viewBox="0 0 24 24" pointer-events="all">
+    <title>Following system colour scheme</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="9"></circle>
+      <path d="M12 3v18m0-12l4.65-4.65M12 14.3l7.37-7.37M12 19.6l8.85-8.85"></path>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24" pointer-events="all">
+    <title>Selected dark colour scheme</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z"></path>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24" pointer-events="all">
+    <title>Selected light colour scheme</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+</svg>
+    <script>
+
+        document.documentElement.dataset.colour_scheme = localStorage.getItem("colour_scheme") || "auto"
+    </script>
+    <section id="pep-page-section">
+        <header>
+            <h1>Python Enhancement Proposals</h1>
+            <ul class="breadcrumbs">
+                <li><a href="https://www.python.org/" title="The Python Programming Language">Python</a> &raquo; </li>
+                <li><a href="../pep-0000/">PEP Index</a> &raquo; </li>
+                <li>PEP 697</li>
+            </ul>
+            <button id="colour-scheme-cycler" onClick="setColourScheme(nextColourScheme())">
+                <svg aria-hidden="true" class="colour-scheme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+                <svg aria-hidden="true" class="colour-scheme-icon-when-dark"><use href="#svg-moon"></use></svg>
+                <svg aria-hidden="true" class="colour-scheme-icon-when-light"><use href="#svg-sun"></use></svg>
+                <span class="visually-hidden">Toggle light / dark / auto colour theme</span>
+            </button>
+        </header>
+        <article>
+            <section id="pep-content">
+<h1 class="page-title">PEP 697 – C API for Extending Opaque Types</h1>
+<dl class="rfc2822 field-list simple">
+<dt class="field-odd">Author<span class="colon">:</span></dt>
+<dd class="field-odd">Petr Viktorin &lt;encukou&#32;&#97;t&#32;gmail.com&gt;</dd>
+<dt class="field-even">Status<span class="colon">:</span></dt>
+<dd class="field-even">Draft</dd>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd">Standards Track</dd>
+<dt class="field-even">Created<span class="colon">:</span></dt>
+<dd class="field-even">23-Aug-2022</dd>
+<dt class="field-odd">Python-Version<span class="colon">:</span></dt>
+<dd class="field-odd">3.12</dd>
+</dl>
+<hr class="docutils" />
+<section id="contents">
+<details><summary>Table of Contents</summary><ul class="simple">
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a><ul>
+<li><a class="reference internal" href="#extending-opaque-types">Extending opaque types</a></li>
+<li><a class="reference internal" href="#extending-variable-size-objects">Extending variable-size objects</a></li>
+<li><a class="reference internal" href="#extending-pyheaptype-specifically">Extending <code class="docutils literal notranslate"><span class="pre">PyHeapType</span></code> specifically</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#specification">Specification</a><ul>
+<li><a class="reference internal" href="#relative-basicsize">Relative <code class="docutils literal notranslate"><span class="pre">basicsize</span></code></a></li>
+<li><a class="reference internal" href="#inheriting-itemsize">Inheriting <code class="docutils literal notranslate"><span class="pre">itemsize</span></code></a></li>
+<li><a class="reference internal" href="#relative-member-offsets">Relative member offsets</a></li>
+<li><a class="reference internal" href="#changes-to-pytypeobject">Changes to <code class="docutils literal notranslate"><span class="pre">PyTypeObject</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#list-of-new-api">List of new API</a></li>
+<li><a class="reference internal" href="#backwards-compatibility">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#security-implications">Security Implications</a></li>
+<li><a class="reference internal" href="#endorsements">Endorsements</a></li>
+<li><a class="reference internal" href="#how-to-teach-this">How to Teach This</a></li>
+<li><a class="reference internal" href="#reference-implementation">Reference Implementation</a></li>
+<li><a class="reference internal" href="#possible-future-enhancements">Possible Future Enhancements</a><ul>
+<li><a class="reference internal" href="#alignment">Alignment</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rejected-ideas">Rejected Ideas</a></li>
+<li><a class="reference internal" href="#open-issues">Open Issues</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+</details></section>
+<section id="abstract">
+<h2><a class="toc-backref" href="#abstract" role="doc-backlink">Abstract</a></h2>
+<p>Add limited C API for extending types whose <code class="docutils literal notranslate"><span class="pre">struct</span></code> is opaque,
+by allowing code to only deal with data specific to a particular (sub)class.</p>
+<p>Make the mechanism usable with <code class="docutils literal notranslate"><span class="pre">PyHeapType</span></code>.</p>
+</section>
+<section id="motivation">
+<h2><a class="toc-backref" href="#motivation" role="doc-backlink">Motivation</a></h2>
+<section id="extending-opaque-types">
+<h3><a class="toc-backref" href="#extending-opaque-types" role="doc-backlink">Extending opaque types</a></h3>
+<p>In order to allow changing/optimizing CPython, and allow freedom for alternate
+implementations of the C API, best practice is to not expose memory layout
+(C structs) in public API, and instead rely on accessor functions.
+(When this hurts performance, direct struct access can be allowed in a
+less stable API tier, at the expense of compatibility with diferent
+versions/implementations of the interpreter.)</p>
+<p>However, when a particular type’s instance struct is hidden, it becomes
+difficult to subclass it.
+The usual subclassing pattern, explained <a class="reference external" href="https://docs.python.org/3.10/extending/newtypes_tutorial.html#subclassing-other-types">in the tutorial</a>,
+is to put the base class <code class="docutils literal notranslate"><span class="pre">struct</span></code> as the first member of the subclass <code class="docutils literal notranslate"><span class="pre">struct</span></code>.
+The tutorial shows this on a <code class="docutils literal notranslate"><span class="pre">list</span></code> subtype with extra state; adapted to
+a heap type (<code class="docutils literal notranslate"><span class="pre">PyType_Spec</span></code>) the example reads:</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">typedef</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">PyListObject</span><span class="w"> </span><span class="n">list</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">state</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"> </span><span class="n">SubListObject</span><span class="p">;</span><span class="w"></span>
+
+<span class="k">static</span><span class="w"> </span><span class="n">PyType_Spec</span><span class="w"> </span><span class="n">Sublist_spec</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;sublist.SubList&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="p">.</span><span class="n">basicsize</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">SubListObject</span><span class="p">),</span><span class="w"></span>
+<span class="w">    </span><span class="p">.</span><span class="n">itemsize</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="p">.</span><span class="n">flags</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Py_TPFLAGS_DEFAULT</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">Py_TPFLAGS_BASETYPE</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="p">.</span><span class="n">slots</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SubList_slots</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+</pre></div>
+</div>
+<p>Since the superclass struct (<code class="docutils literal notranslate"><span class="pre">PyListObject</span></code>) is part of the subclass struct
+(<code class="docutils literal notranslate"><span class="pre">SubListObject</span></code>):</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">PyListObject</span></code> size must be known at compile time, and</li>
+<li>the size must be the same across all interpreters/versions the compiled
+extension is ABI-compatible with.</li>
+</ul>
+<p>But in limited API/stable ABI, we do not expose the size of <code class="docutils literal notranslate"><span class="pre">PyListObject</span></code>,
+so that it can vary between CPython versions (and even between possible
+alternate ABI-compatible C API implementations).</p>
+<p>With the size not available, limited API users must resort to workarounds such
+as querying <code class="docutils literal notranslate"><span class="pre">__basicsize__</span></code> and plugging it into <code class="docutils literal notranslate"><span class="pre">PyType_Spec</span></code> at runtime,
+and divining the correct offset for their extra data.
+This requires making assumptions about memory layout, which the limited API
+is supposed to hide.</p>
+</section>
+<section id="extending-variable-size-objects">
+<h3><a class="toc-backref" href="#extending-variable-size-objects" role="doc-backlink">Extending variable-size objects</a></h3>
+<p>Another scenario where the traditional way to extend an object does not work
+is variable-sized objects, i.e. ones with non-zero <code class="docutils literal notranslate"><span class="pre">tp_itemsize</span></code>.
+If the instance struct ends with a variable-length array (such as
+in <code class="docutils literal notranslate"><span class="pre">tuple</span></code> or <code class="docutils literal notranslate"><span class="pre">int</span></code>), subclasses cannot add their own extra data without
+detailed knowledge about how the superclass allocates and uses its memory.</p>
+<p>Some types, such as CPython’s <code class="docutils literal notranslate"><span class="pre">PyHeapType</span></code>, handle this by storing
+variable-sized data after the fixed-size struct.
+This means that any subclass can add its own fixed-size data.
+(Only one class in the inheritance hierarchy can use variable-sized data, though.)
+This PEP proposes API that makes this practice easier, and ensures the
+variable-sized data is properly aligned.</p>
+<p>Note that many variable-size types, like <code class="docutils literal notranslate"><span class="pre">int</span></code> or <code class="docutils literal notranslate"><span class="pre">tuple</span></code>, do not use
+this mechanism.
+This PEP does not propose any changes to existing variable-size types (like
+<code class="docutils literal notranslate"><span class="pre">int</span></code> or <code class="docutils literal notranslate"><span class="pre">tuple</span></code>) except <code class="docutils literal notranslate"><span class="pre">PyHeapType</span></code>.</p>
+</section>
+<section id="extending-pyheaptype-specifically">
+<h3><a class="toc-backref" href="#extending-pyheaptype-specifically" role="doc-backlink">Extending <code class="docutils literal notranslate"><span class="pre">PyHeapType</span></code> specifically</a></h3>
+<p>The motivating problem this PEP solves is creating metaclasses, that is,
+subclasses of <code class="docutils literal notranslate"><span class="pre">type</span></code>.
+The underlying <code class="docutils literal notranslate"><span class="pre">PyHeapTypeObject</span></code> struct is both variable-sized and
+opaque in the limited API.</p>
+<p>Projects such as language bindings and frameworks that need to attach custom
+data to metaclasses currently resort to questionable workarounds.
+The situation is worse in projects that target the Limited API.</p>
+<p>For an example of the currently necessary workarounds, see:
+<a class="reference external" href="https://github.com/wjakob/nanobind/blob/f3044cf44763e105428e4e0cf8f42d951b9cc997/src/nb_type.cpp#L1085">nb_type_data_static</a>
+in the not-yet-released limited-API branch of <code class="docutils literal notranslate"><span class="pre">nanobind</span></code>
+(a spiritual successor of the popular C++ binding generator <code class="docutils literal notranslate"><span class="pre">pybind11</span></code>).</p>
+</section>
+</section>
+<section id="rationale">
+<h2><a class="toc-backref" href="#rationale" role="doc-backlink">Rationale</a></h2>
+<p>This PEP proposes a different model: instead of the superclass data being
+part of the subclass data, the extra space a subclass needs is specified
+and accessed separately.
+(How base class data is accessed is left to whomever implements the base class:
+they can for example  provide accessor functions, expose a part of its
+<code class="docutils literal notranslate"><span class="pre">struct</span></code> for better performance, or do both.)</p>
+<p>The proposed mechanism allows using static, read-only <code class="docutils literal notranslate"><span class="pre">PyType_Spec</span></code>
+even if the superclass struct is opaque, like <code class="docutils literal notranslate"><span class="pre">PyTypeObject</span></code> in
+the Limited API.</p>
+<p>Combined with a way to create class from <code class="docutils literal notranslate"><span class="pre">PyType_Spec</span></code> and a custom metaclass,
+this will allow libraries like nanobind or JPype to create metaclasses
+without making assumptions about <code class="docutils literal notranslate"><span class="pre">PyTypeObject</span></code>’s memory layout.
+The approach generalizes to non-metaclass types as well.</p>
+</section>
+<section id="specification">
+<h2><a class="toc-backref" href="#specification" role="doc-backlink">Specification</a></h2>
+<p>In the code blocks below, only function headers are part of the specification.
+Other code (the size/offset calculations) are details of the initial CPython
+implementation, and subject to change.</p>
+<section id="relative-basicsize">
+<h3><a class="toc-backref" href="#relative-basicsize" role="doc-backlink">Relative <code class="docutils literal notranslate"><span class="pre">basicsize</span></code></a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">basicsize</span></code> member of <code class="docutils literal notranslate"><span class="pre">PyType_Spec</span></code> will be allowed to be zero or
+negative.
+In that case, its absolute value will specify the amount of <em>extra</em> storage space instances of
+the new class require, in addition to the basicsize of the base class.
+That is, the basicsize of the resulting class will be:</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="n">type</span><span class="o">-&gt;</span><span class="n">tp_basicsize</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_align</span><span class="p">(</span><span class="n">base</span><span class="o">-&gt;</span><span class="n">tp_basicsize</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">_align</span><span class="p">(</span><span class="o">-</span><span class="n">spec</span><span class="o">-&gt;</span><span class="n">basicsize</span><span class="p">);</span><span class="w"></span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">_align</span></code> rounds up to a multiple of <code class="docutils literal notranslate"><span class="pre">alignof(max_align_t)</span></code>.
+When <code class="docutils literal notranslate"><span class="pre">spec-&gt;basicsize</span></code> is zero, <code class="docutils literal notranslate"><span class="pre">base-&gt;tp_basicsize</span></code> will be inherited
+directly instead (i.e. set to <code class="docutils literal notranslate"><span class="pre">base-&gt;tp_basicsize</span></code> without aligning).</p>
+<p>On an instance, the memory area specific to a subclass – that is, the
+“extra space” that subclass reserves in addition its base – will be available
+using a new function, <code class="docutils literal notranslate"><span class="pre">PyObject_GetTypeData</span></code>.
+In CPython, this function will be defined as:</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="w"></span>
+<span class="nf">PyObject_GetTypeData</span><span class="p">(</span><span class="n">PyObject</span><span class="w"> </span><span class="o">*</span><span class="n">obj</span><span class="p">,</span><span class="w"> </span><span class="n">PyTypeObject</span><span class="w"> </span><span class="o">*</span><span class="n">cls</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="p">(</span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">obj</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">_align</span><span class="p">(</span><span class="n">cls</span><span class="o">-&gt;</span><span class="n">tp_base</span><span class="o">-&gt;</span><span class="n">tp_basicsize</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>Another function will be added to retreive the size of this memory area:</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="n">Py_ssize_t</span><span class="w"></span>
+<span class="nf">PyObject_GetTypeDataSize</span><span class="p">(</span><span class="n">PyTypeObject</span><span class="w"> </span><span class="o">*</span><span class="n">cls</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">cls</span><span class="o">-&gt;</span><span class="n">tp_basicsize</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">_align</span><span class="p">(</span><span class="n">cls</span><span class="o">-&gt;</span><span class="n">tp_base</span><span class="o">-&gt;</span><span class="n">tp_basicsize</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>The functionality comes with two important caveats, which will be pointed out
+in documentation:</p>
+<ul class="simple">
+<li>The new functions may only be used for classes created using negative
+<code class="docutils literal notranslate"><span class="pre">PyType_Spec.basicsize</span></code>. For other classes, the behavior is undefined.
+(Note that this allows the above code to assume <code class="docutils literal notranslate"><span class="pre">cls-&gt;tp_base</span></code> is not
+<code class="docutils literal notranslate"><span class="pre">NULL</span></code>.)</li>
+<li>Classes of variable-length objects (those with non-zero <code class="docutils literal notranslate"><span class="pre">tp_itemsize</span></code>)
+can only be meaningfully extended using negative <code class="docutils literal notranslate"><span class="pre">basicsize</span></code> if all
+superclasses cooperate (see below).
+Of types defined by Python, initially only <code class="docutils literal notranslate"><span class="pre">PyTypeObject</span></code> will do so,
+others (including <code class="docutils literal notranslate"><span class="pre">int</span></code> or <code class="docutils literal notranslate"><span class="pre">tuple</span></code>) will not.</li>
+</ul>
+</section>
+<section id="inheriting-itemsize">
+<h3><a class="toc-backref" href="#inheriting-itemsize" role="doc-backlink">Inheriting <code class="docutils literal notranslate"><span class="pre">itemsize</span></code></a></h3>
+<p>If the <code class="docutils literal notranslate"><span class="pre">itemsize</span></code> member of <code class="docutils literal notranslate"><span class="pre">PyType_Spec</span></code> is set to zero,
+the itemsize will be inherited from the base class .</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This PEP does not propose specifying “relative” <code class="docutils literal notranslate"><span class="pre">itemsize</span></code>
+(using a negative number).
+There is a lack of motivating use cases, and there’s no obvious
+best memory layout for sharing item storage across classes in the
+inheritance hierarchy.</p>
+</div>
+<p>A new function, <code class="docutils literal notranslate"><span class="pre">PyObject_GetItemData</span></code>, will be added to safely access the
+memory reserved for items, taking subclasses that extend <code class="docutils literal notranslate"><span class="pre">tp_basicsize</span></code>
+into account.
+In CPython it will be defined as:</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="w"></span>
+<span class="nf">PyObject_GetItemData</span><span class="p">(</span><span class="n">PyObject</span><span class="w"> </span><span class="o">*</span><span class="n">obj</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="p">(</span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="n">obj</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">Py_TYPE</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">tp_basicsize</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+<p>This function will <em>not</em> be added to the Limited API.</p>
+<p>Note that it <strong>is not safe</strong> to use <strong>any</strong> of the functions added in this PEP
+unless <strong>all classes in the inheritance hierarchy</strong> only use
+<code class="docutils literal notranslate"><span class="pre">PyObject_GetItemData</span></code> (or an equivalent) for per-item memory, or don’t
+use per-item memory at all.
+(This issue already exists for most current classes that use variable-length
+arrays in the instance struct, but it’s much less obvious if the base struct
+layout is unknown.)</p>
+<p>The documentation for all API added in this PEP will mention
+the caveat.</p>
+</section>
+<section id="relative-member-offsets">
+<h3><a class="toc-backref" href="#relative-member-offsets" role="doc-backlink">Relative member offsets</a></h3>
+<p>In types defined using negative <code class="docutils literal notranslate"><span class="pre">PyType_Spec.basicsize</span></code>, the offsets of
+members defined via <code class="docutils literal notranslate"><span class="pre">Py_tp_members</span></code> must be “relative” – to the
+extra subclass data, rather than the full <code class="docutils literal notranslate"><span class="pre">PyObject</span></code> struct.
+This will be indicated by a new flag, <code class="docutils literal notranslate"><span class="pre">PY_RELATIVE_OFFSET</span></code>.</p>
+<p>In the initial implementation, the new flag will be redundant – it only serves
+to make the offset’s changed meaning clear.
+It is an error to <em>not</em> use <code class="docutils literal notranslate"><span class="pre">PY_RELATIVE_OFFSET</span></code> with negative <code class="docutils literal notranslate"><span class="pre">basicsize</span></code>,
+and it is an error to use it in any other context (i.e. direct or indirect
+calls to <code class="docutils literal notranslate"><span class="pre">PyDescr_NewMember</span></code>, <code class="docutils literal notranslate"><span class="pre">PyMember_GetOne</span></code>, <code class="docutils literal notranslate"><span class="pre">PyMember_SetOne</span></code>).</p>
+<p>CPython will adjust the offset and clear the <code class="docutils literal notranslate"><span class="pre">PY_RELATIVE_OFFSET</span></code> flag when
+intitializing a type.
+This means that the created type’s <code class="docutils literal notranslate"><span class="pre">tp_members</span></code> will not match the input
+definition’s <code class="docutils literal notranslate"><span class="pre">Py_tp_members</span></code> slot, and that any code that reads
+<code class="docutils literal notranslate"><span class="pre">tp_members</span></code> does not need to handle the flag.</p>
+</section>
+<section id="changes-to-pytypeobject">
+<h3><a class="toc-backref" href="#changes-to-pytypeobject" role="doc-backlink">Changes to <code class="docutils literal notranslate"><span class="pre">PyTypeObject</span></code></a></h3>
+<p>Internally in CPython, access to <code class="docutils literal notranslate"><span class="pre">PyTypeObject</span></code> “items”
+(<code class="docutils literal notranslate"><span class="pre">_PyHeapType_GET_MEMBERS</span></code>) will be changed to use <code class="docutils literal notranslate"><span class="pre">PyObject_GetItemData</span></code>.
+Note that the current implementation is equivalent except it lacks the
+alignment adjustment.
+The macro is used a few times in type creation, so no measurable
+performance impact is expected.
+Public API for this data, <code class="docutils literal notranslate"><span class="pre">tp_members</span></code>, will not be affected.</p>
+</section>
+</section>
+<section id="list-of-new-api">
+<h2><a class="toc-backref" href="#list-of-new-api" role="doc-backlink">List of new API</a></h2>
+<p>The following new functions are proposed.
+These will be added to the Limited API/Stable ABI:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">void</span> <span class="pre">*</span> <span class="pre">PyObject_GetTypeData(PyObject</span> <span class="pre">*obj,</span> <span class="pre">PyTypeObject</span> <span class="pre">*cls)</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">Py_ssize_t</span> <span class="pre">PyObject_GetTypeDataSize(PyTypeObject</span> <span class="pre">*cls)</span></code></li>
+</ul>
+<p>These will be added to the public C API only:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">void</span> <span class="pre">*PyObject_GetItemData(PyObject</span> <span class="pre">*obj)</span></code></li>
+</ul>
+</section>
+<section id="backwards-compatibility">
+<h2><a class="toc-backref" href="#backwards-compatibility" role="doc-backlink">Backwards Compatibility</a></h2>
+<p>There are no known backwards compatibility concerns.</p>
+</section>
+<section id="security-implications">
+<h2><a class="toc-backref" href="#security-implications" role="doc-backlink">Security Implications</a></h2>
+<p>None known.</p>
+</section>
+<section id="endorsements">
+<h2><a class="toc-backref" href="#endorsements" role="doc-backlink">Endorsements</a></h2>
+<p>XXX: The PEP mentions nanobind – make sure they agree!</p>
+<p>XXX: HPy, JPype, PySide might also want to chime in.</p>
+</section>
+<section id="how-to-teach-this">
+<h2><a class="toc-backref" href="#how-to-teach-this" role="doc-backlink">How to Teach This</a></h2>
+<p>The initial implementation will include reference documentation
+and a What’s New entry, which should be enough for the target audience
+– authors of C extension libraries.</p>
+</section>
+<section id="reference-implementation">
+<h2><a class="toc-backref" href="#reference-implementation" role="doc-backlink">Reference Implementation</a></h2>
+<p>XXX: Not quite ready yet</p>
+</section>
+<section id="possible-future-enhancements">
+<h2><a class="toc-backref" href="#possible-future-enhancements" role="doc-backlink">Possible Future Enhancements</a></h2>
+<section id="alignment">
+<h3><a class="toc-backref" href="#alignment" role="doc-backlink">Alignment</a></h3>
+<p>The proposed implementation may waste some space if instance structs
+need smaller alignment than <code class="docutils literal notranslate"><span class="pre">alignof(max_align_t)</span></code>.
+Also, dealing with alignment makes the calculation slower than it could be
+if we could rely on <code class="docutils literal notranslate"><span class="pre">base-&gt;tp_basicsize</span></code> being properly aligned for the
+subtype.</p>
+<p>In other words, the proposed implementation focuses on safety and ease of use,
+and trades space and time for it.
+If it turns out that this is a problem, the implementation can be adjusted
+without breaking the API:</p>
+<ul class="simple">
+<li>The offset to the type-specific buffer can be stored, so
+<code class="docutils literal notranslate"><span class="pre">PyObject_GetTypeData</span></code> effectively becomes
+<code class="docutils literal notranslate"><span class="pre">(char</span> <span class="pre">*)obj</span> <span class="pre">+</span> <span class="pre">cls-&gt;ht_typedataoffset</span></code>, possibly speeding things up at
+the cost of an extra pointer in the class.</li>
+<li>Then, a new <code class="docutils literal notranslate"><span class="pre">PyType_Slot</span></code> can specify the desired alignment, to
+reduce space requirements for instances.</li>
+<li>Alternatively, it might be possible to align <code class="docutils literal notranslate"><span class="pre">tp_basicsize</span></code> up at class
+creation/readying time.</li>
+</ul>
+</section>
+</section>
+<section id="rejected-ideas">
+<h2><a class="toc-backref" href="#rejected-ideas" role="doc-backlink">Rejected Ideas</a></h2>
+<p>None yet.</p>
+</section>
+<section id="open-issues">
+<h2><a class="toc-backref" href="#open-issues" role="doc-backlink">Open Issues</a></h2>
+<p>Is negative basicsize the way to go? Should this be enabled by a flag instead?</p>
+</section>
+<section id="copyright">
+<h2><a class="toc-backref" href="#copyright" role="doc-backlink">Copyright</a></h2>
+<p>This document is placed in the public domain or under the
+CC0-1.0-Universal license, whichever is more permissive.</p>
+</section>
+</section>
+<hr class="docutils" />
+<p>Source: <a class="reference external" href="https://github.com/python/peps/blob/main/pep-0697.rst">https://github.com/python/peps/blob/main/pep-0697.rst</a></p>
+<p>Last modified: <a class="reference external" href="https://github.com/python/peps/commits/main/pep-0697.rst">2022-08-31 09:35:53 GMT</a></p>
+
+        </article>
+        <nav id="pep-sidebar">
+            <h2>Contents</h2>
+            <ul>
+<li><a class="reference internal" href="#abstract">Abstract</a></li>
+<li><a class="reference internal" href="#motivation">Motivation</a><ul>
+<li><a class="reference internal" href="#extending-opaque-types">Extending opaque types</a></li>
+<li><a class="reference internal" href="#extending-variable-size-objects">Extending variable-size objects</a></li>
+<li><a class="reference internal" href="#extending-pyheaptype-specifically">Extending <code class="docutils literal notranslate"><span class="pre">PyHeapType</span></code> specifically</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rationale">Rationale</a></li>
+<li><a class="reference internal" href="#specification">Specification</a><ul>
+<li><a class="reference internal" href="#relative-basicsize">Relative <code class="docutils literal notranslate"><span class="pre">basicsize</span></code></a></li>
+<li><a class="reference internal" href="#inheriting-itemsize">Inheriting <code class="docutils literal notranslate"><span class="pre">itemsize</span></code></a></li>
+<li><a class="reference internal" href="#relative-member-offsets">Relative member offsets</a></li>
+<li><a class="reference internal" href="#changes-to-pytypeobject">Changes to <code class="docutils literal notranslate"><span class="pre">PyTypeObject</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#list-of-new-api">List of new API</a></li>
+<li><a class="reference internal" href="#backwards-compatibility">Backwards Compatibility</a></li>
+<li><a class="reference internal" href="#security-implications">Security Implications</a></li>
+<li><a class="reference internal" href="#endorsements">Endorsements</a></li>
+<li><a class="reference internal" href="#how-to-teach-this">How to Teach This</a></li>
+<li><a class="reference internal" href="#reference-implementation">Reference Implementation</a></li>
+<li><a class="reference internal" href="#possible-future-enhancements">Possible Future Enhancements</a><ul>
+<li><a class="reference internal" href="#alignment">Alignment</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rejected-ideas">Rejected Ideas</a></li>
+<li><a class="reference internal" href="#open-issues">Open Issues</a></li>
+<li><a class="reference internal" href="#copyright">Copyright</a></li>
+</ul>
+
+            <br>
+            <a id="source" href="https://github.com/python/peps/blob/main/pep-0697.rst">Page Source (GitHub)</a>
+        </nav>
+    </section>
+    <script src="../_static/colour_scheme.js"></script>
+    <script src="../_static/wrap_tables.js"></script>
+</body>
+</html>
