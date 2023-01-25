@@ -56,7 +56,9 @@ the PEP index.
 
 
 def generate_topic_contents(docnames: list[str], env: BuildEnvironment):
-    update_sphinx(f"topic/index", """\
+    update_sphinx(
+        "topic/index",
+        """\
 Topic Index
 ***********
 
@@ -68,4 +70,7 @@ PEPs are indexed by topic on the pages below:
    :glob:
 
    *
-""", docnames, env)
+""",
+        docnames,
+        env,
+    )

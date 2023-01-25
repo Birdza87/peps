@@ -39,11 +39,7 @@ class PEPTranslator(html5.HTML5Translator):
         # Only first paragraph can be compact (ignoring initial label & invisible nodes)
         first = isinstance(node.parent[0], nodes.label)
         visible_siblings = [child for child in node.parent.children[first:] if not isinstance(child, nodes.Invisible)]
-        if visible_siblings[0] is not node:
-            return False
-
-        # otherwise, the paragraph should be compact
-        return True
+        return visible_siblings[0] is node
 
     def visit_paragraph(self, node: nodes.paragraph) -> None:
         """Remove <p> tags if possible."""
@@ -74,7 +70,7 @@ class PEPTranslator(html5.HTML5Translator):
         back_refs = node.parent["backrefs"]
         if self.settings.footnote_backlinks and len(back_refs) == 1:
             self.body.append(f'<a href="#{back_refs[0]}">')
-            self.context.append(f"</a>]")
+            self.context.append("</a>]")
         else:
             self.context.append("]")
 
